@@ -1,0 +1,12 @@
+.nolist
+#include	"ti83plus.inc"
+#define		ProgStart    $9D95
+.list
+.org    ProgStart - 2
+	.db    t2ByteTok, tAsmCmp
+  ret
+
+msg:
+  .db "Hello world!", 0
+.end
+.end
