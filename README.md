@@ -100,7 +100,7 @@ The above code produces the following listing:
 Here are some useful instructions:
 
 ```
-.addinstr swap A,B A8A8A8 3		; https://en.wikipedia.org/wiki/XOR_swap_algorithm
+.addinstr swap A,B A8A8A8 3		; ```[XOR Swap Algorithm](https://en.wikipedia.org/wiki/XOR_swap_algorithm)```
 .addinstr swap A,C A9A9A9 3
 .addinstr swap A,D AAAAAA 3
 .addinstr swap A,E ABABAB 3
@@ -109,7 +109,7 @@ Here are some useful instructions:
 .addinstr clr A AF 1			; A xor A = 0
 ```
 
-They're saved in a file called (*extops.inc*)[src/inc/extops.inc] which you can include in your code and use like so:
+They're saved in a file called [*extops.inc*](src/inc/extops.inc) which you can include in your code and use like so:
 
 ```
 #include "extops.inc"
@@ -205,8 +205,8 @@ Make sure to read carefully when looking at the listing file, since the addresse
           01 01 01 01 
           01 01 01 01 
           01 01 01 01 .block 64,1
-4 <b>00:9E40</b> -  -  -  -  .seek $9E20
-5 <b>00:9E20</b> FF -  -  -  .db $FF
+4 ```**00:9E40**``` -  -  -  -  .seek $9E20
+5 ```**00:9E20**``` FF -  -  -  .db $FF
 6 00:9E21 -  -  -  -  .seek $9E40
 ```
 
@@ -215,7 +215,7 @@ However, a `hexdump` of the assembled binary shows that the operation was indeed
 ```
 00000000  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
 00000010  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
-00000020  <b>ff</b> 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+00000020  ```**ff**``` 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
 00000030  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
 ```
 
