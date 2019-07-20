@@ -28,24 +28,26 @@ MACRO_DIR=$EMU_DIR/macro
 # make sure that the directory tree is built
 mkdir -p $INC_DIR $CODE_DIR $LST_DIR $BIN_DIR $XP8_DIR $ROM_DIR $MACRO_DIR
 
-ASM_FLAGS="-T -I $INC_DIR"
+# build a hex binary and create a code listing
+BIN_FLAGS="-T -S -I $INC_DIR"
 MAIN_FILE=$CODE_DIR/$PROG.z80
 BIN_FILE=$BIN_DIR/$PROG.bin
 LST_FILE=$LST_DIR/$PROG.lst
 
 echo "Building $PROG:"
-echo "Assembling..."
-echo "spasm $ASM_FLAGS $MAIN_FILE $BIN_FILE"
-spasm $ASM_FLAGS $MAIN_FILE $BIN_FILE
+echo "Assembling Hex Binary File..."
+echo "spasm $BIN_FLAGS $MAIN_FILE $BIN_FILE"
+spasm $BIN_FLAGS $MAIN_FILE $BIN_FILE
 mv $BIN_DIR/$PROG.lst $LST_FILE
 echo ""
 
-# convert binary to ti calculator program format
+# build a ti calculator program
+XP8_FLAGS="-I $INC_DIR"
 XP8_FILE=$XP8_DIR/$PROG.8xp
 
-echo "Formatting $PROG.bin to .8xp..."
-echo "python3 $UTIL_DIR/bin_to_8xp.py $BIN_FILE $XP8_FILE"
-python3 $UTIL_DIR/bin_to_8xp.py $BIN_FILE $XP8_FILE
+echo "Assembling .8xp Program File..."
+echo "spasm $XP8_FLAGS $MAIN_FILE $XP8_FILE"
+spasm $XP8_FLAGS $MAIN_FILE $XP8_FILE
 echo ""
 
 # Run the program on an emulator
