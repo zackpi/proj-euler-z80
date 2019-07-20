@@ -99,15 +99,15 @@ The above code produces the following listing:
 
 Here are some useful instructions:
 
-```
-.addinstr swap A,B A8A8A8 3		; ```[XOR Swap Algorithm](https://en.wikipedia.org/wiki/XOR_swap_algorithm)```
+<pre>
+.addinstr swap A,B A8A8A8 3		; <a href="https://en.wikipedia.org/wiki/XOR_swap_algorithm">XOR swap algorithm</a>
 .addinstr swap A,C A9A9A9 3
 .addinstr swap A,D AAAAAA 3
 .addinstr swap A,E ABABAB 3
 .addinstr swap A,H ACACAC 3
 .addinstr swap A,L ADADAD 3
 .addinstr clr A AF 1			; A xor A = 0
-```
+</pre>
 
 They're saved in a file called [*extops.inc*](src/inc/extops.inc) which you can include in your code and use like so:
 
@@ -186,7 +186,7 @@ Moves the program counter to the specified 2-byte absolute address. Also moves t
 
 Make sure to read carefully when looking at the listing file, since the addresses at the left are not always in order when using `.seek`. Check the addresses of lines 4 and 5.
 
-```
+<pre>
 1 00:0000 -  -  -  -  .list
 2 00:0000 -  -  -  -  .org $9E00
 3 00:9E00 01 01 01 01 
@@ -205,19 +205,19 @@ Make sure to read carefully when looking at the listing file, since the addresse
           01 01 01 01 
           01 01 01 01 
           01 01 01 01 .block 64,1
-4 ```**00:9E40**``` -  -  -  -  .seek $9E20
-5 ```**00:9E20**``` FF -  -  -  .db $FF
+4 <b>00:9E40</b> -  -  -  -  .seek $9E20
+5 <b>00:9E20</b> FF -  -  -  .db $FF
 6 00:9E21 -  -  -  -  .seek $9E40
-```
+</pre>
 
 However, a `hexdump` of the assembled binary shows that the operation was indeed performed properly--that is, an `$ff` appears in the middle of the `.block` segment.
 
-```
+<pre>
 00000000  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
 00000010  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
-00000020  ```**ff**``` 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+00000020  <b>ff</b> 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
 00000030  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
-```
+</pre>
 
 #### assume
 Does nothing in the most recent version of SPASM. But if it did it would take arguments in this format:
