@@ -2,6 +2,165 @@
 ### by zackpi
 
 ## SPASM-ng Documentation
+### Pre-Operations (preops)
+#### define (defcont), undefine (undef)
+Create or remove constants to be used during assembly. Defines can be set to equal a value, given as the second operand, or they can just be defined to exist--that is, to be "defined". The `#defcont` preop continues the value expression of the define on a new line--this might be useful for keeping very complicated defines pretty. The `#undefine` preop and its alias `#undef` make it so the constant is no longer defined.
+
+```
+#define progStart $9D00
+#defcont          + $95       ; continued the define statement
+.org progStart-2              ; evaluates to $9D93
+
+#undefine progStart           ; could have also used #undef
+#ifdef progStart
+.echo "this won't print"
+#endif
+```
+
+#### include
+Performs a first pass of the contents of the file pointed to by the path in its argument. An included file usually has useful macros, defines, and equates that can be used in your source during the second pass (or later in the first pass if you included the file at the top of your source).
+
+```
+#include "ti83plus.inc"
+; code
+```
+
+You can also include black-and-white bitmaps (.bmp image files) as follows:
+
+```
+#include "artwork.bmp"
+```
+
+The bitmap must be black-and-white (1-bit grayscale) and the bitmap header can't include the color space information, so there are a lot of restrictions with this. Also, the format prefers 8xN data and will pad the data with 0's to make it wide enough to fit in a byte, even if it's 4xN like this:
+
+<pre>
+60   ; 0<b>11</b>0 0000  <- padding on the right
+F0   ; <b>1111</b> 0000
+F0   ; <b>1111</b> 0000
+60   ; 0<b>11</b>0 0000
+F0   ; <b>1111</b> 0000
+F0   ; <b>1111</b> 0000
+90   ; <b>1</b>00<b>1</b> 0000
+90   ; <b>1</b>00<b>1</b> 0000
+</pre>
+
+Here's how I created the above bitmap using GIMP, but you could probably find many other editors that output the bitmap format that SPASM accepts.
+
+<img src="img/create_new_image.png" width="30%" />
+<img src="img/edit_image.png" width="30%" />
+<img src="img/export_image.png" width="30%" />
+
+Here's how an assembled 8x16 sprite looks in bytecode:
+
+<pre>
+3C   ; 0 0 <b>1</b> <b>1</b> <b>1</b> <b>1</b> 0 0
+42   ; 0 <b>1</b> 0 0 0 0 <b>1</b> 0
+6A   ; 0 <b>1</b> <b>1</b> 0 <b>1</b> 0 <b>1</b> 0
+42   ; 0 <b>1</b> 0 0 0 0 <b>1</b> 0
+3C   ; 0 0 <b>1</b> <b>1</b> <b>1</b> <b>1</b> 0 0
+18   ; 0 0 0 <b>1</b> <b>1</b> 0 0 0
+66   ; 0 <b>1</b> <b>1</b> 0 0 <b>1</b> <b>1</b> 0
+A5   ; <b>1</b> 0 <b>1</b> 0 0 <b>1</b> 0 <b>1</b>
+A5   ; <b>1</b> 0 <b>1</b> 0 0 <b>1</b> 0 <b>1</b>
+A5   ; <b>1</b> 0 <b>1</b> 0 0 <b>1</b> 0 <b>1</b>
+A5   ; <b>1</b> 0 <b>1</b> 0 0 <b>1</b> 0 <b>1</b>
+3C   ; 0 0 <b>1</b> <b>1</b> <b>1</b> <b>1</b> 0 0
+24   ; 0 0 <b>1</b> 0 0 <b>1</b> 0 0
+24   ; 0 0 <b>1</b> 0 0 <b>1</b> 0 0
+24   ; 0 0 <b>1</b> 0 0 <b>1</b> 0 0
+66   ; 0 <b>1</b> <b>1</b> 0 0 <b>1</b> <b>1</b> 0
+</pre>
+
+
+#### if (elif, ifdef, ifndef), else, endif
+The `#if` and `#elif` preops allow you to control what parts of the source code get assembled based on the boolean value of their operands. The `#ifdef` and `#ifndef` preops work the same except they resolve to true when their operand has been defined or has not been defined respectively. The `#else`, and `#endif` preops define the true blocks and false blocks that get assembled or ignored as a result of the `#if` boolean tests.
+
+For example, assembling the code below with `spasm -DDEBUG test.z80 test.bin` will include the call to `debug_prt`. Assembling it with `spasm test.z80 test.bin` will ignore the call and simply `ret`.
+
+```
+#ifdef DEBUG
+     call debug_prt
+     .db "this is a debug print",0
+     ret                      ; gets assembled if DEBUG is defined
+#else
+     ret                      ; only gets assembled during production
+#endif
+```
+
+There are infinite ways to construct complicated examples of if-skeletons, so I won't show them all but you can figure out where is best for you. Here's just one more, an example of an [include guard](https://en.wikipedia.org/wiki/Include_guard):
+
+*tester.inc*
+```
+#ifndef TESTER_INC
+#define TESTER_INC
+test:     ret
+#endif
+```
+
+Even if you put `#include "tester.inc"` several places in your code, it will only be included one time because after the first time `TESTER_INC` will be defined and the `#ifndef` will resolve to false, skipping the whole file.
+
+#### comment, endcomment
+The assembler ignores the block of code between `#comment` and `#endcomment`, allowing for large and unformatted comments.
+
+```
+#comment   ____          https://www.asciiart.eu/art-and-design/escher
+          /   /\
+         /___/  \
+        /   /\  /\
+       /   /  \/  \
+      /   /   /\   \
+     /   /   /  \   \
+    /   /   /\   \   \
+   /   /   /  \   \   \
+  /___/___/____\   \   \
+ /   /          \   \  /\
+/___/____________\___\/  \
+\   \             \   \  /
+ \___\_____________\___\/
+#endcomment
+```
+
+#### macro, endmacro
+Creates a macro function that performs slightly blind string replaces of its arguments before the code is assembled. These can be simple or arbitrarily complex.
+
+```
+#macro ntstr(value)      ; create a null-terminated string
+     .db value,0
+#endmacro
+
+ntstr("hello")           ; .db "hello",0
+```
+
+#### import
+Used for importing binaries directly into the source code. Can be used for sprites and look-up tables. In the case below, *msg* is an ASCII-encoded file, so `#import msg` is effectively the same as `.db "super cool message thingy"` and indeed the message prints as expected.
+
+```
+#include  "ti83plus.inc"
+.org $9D93
+.db  t2ByteTok,tAsmCmp
+
+     bcall(_ClrLCDFull)
+     ld HL, 0
+     ld (CurRow), HL
+     ld HL, Message
+     bcall(_PutS)        ; Displays the string
+     bcall(_NewLine)
+     ret
+
+Message:
+#import   "msg"
+.db 0
+```
+
+*msg*
+```
+super cool message thingy
+```
+
+#### region, endregion
+These are valid preops according to the SPASM source code but they don't do anything.
+
+
 ### Directives
 #### db (byte), dw (word), dl (long)
 Place bytes, words, or longs (double-words) into code memory at the current location. The `.byte`, `.word`, and `.long` directives are aliases for `.db`, `.dw`, and `.dl`, respectively.
