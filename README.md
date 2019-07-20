@@ -1,4 +1,4 @@
-# Ti8X z80 ASM Project Euler Programs
+# Ti8X Z80 ASM Project Euler Programs
 ### by zackpi
 
 ## SPASM-ng Documentation
@@ -46,7 +46,13 @@ F0   ; <b>1 1 1 1</b>  0 0 0 0
 
 Here's how I created the above bitmap using GIMP, but you could probably find many other editors that output the bitmap format that SPASM accepts.
 
-<div style="display: block; justify-content: space-between;">
+<div style=
+     "
+          display: block; 
+          justify-content: space-between; 
+          align-items: center;
+     "
+>
      <img src="img/create_new_image.png" width="30%" />
      <img src="img/edit_image.png" width="30%" />
      <img src="img/export_image.png" width="30%" />
