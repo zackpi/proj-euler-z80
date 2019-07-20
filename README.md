@@ -135,13 +135,93 @@ Print a value or string to a file or stderr during assembly.
 ```
 
 #### equ
+Create an equate for a constant value. Each place in the source code where `ALIAS` is found, the constant value is substituted. Equates can be used in expressions, and likewise, expressions can be used as the constant value for an alias as long as the value is predetermined at assembly.
 
-
+```
+ALIAS 	.equ 64
+PLUS1 	.equ 1+ALIAS
+	ld A, PLUS1
+```
 
 #### show
+Shows the string value of a define, so no text replacement is performed before printing the value (see `apple` below). Does not work with equates.
+
+```
+#define	progStart	$9D95
+#define apple progStart-2
+.show apple
+```
+
+The above code produces `APPLE: progStart-2` in the command line during assembly.
 
 #### option
+Create multiple defines in one line. Each `name=expr` pair will create a define with `__name` evaluating to `expr`. Several pairs can be chained together.
+
+```
+.option apple=56,orange=tacos,bagel="flamingo"
+.show __apple
+.show __orange
+.show __flamingo
+```
+
+The above code produces the following during assembly:
+
+```
+__APPLE: 56
+__ORANGE: tacos
+__BAGEL: "flamingo"
+```
 
 #### seek
+Moves the program counter to the specified 2-byte absolute address. Also moves the `out_ptr` which controls where the file ends to the value specified, so without the last line below, the program would end after `$9E20`, but with it the program ends at `$9E40` as intended.
+
+```
+.list
+.org $9E00
+.block 64,1
+.seek $9E20		; place PC into center of .block segment
+.db $FF
+.seek $9E40		; sets the end of the program properly
+```
+
+Make sure to read carefully when looking at the listing file, since the addresses at the left are not always in order when using `.seek`. Check the addresses of lines 4 and 5.
+
+```
+1 00:0000 -  -  -  -  .list
+2 00:0000 -  -  -  -  .org $9E00
+3 00:9E00 01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 
+          01 01 01 01 .block 64,1
+4 <b>00:9E40</b> -  -  -  -  .seek $9E20
+5 <b>00:9E20</b> FF -  -  -  .db $FF
+6 00:9E21 -  -  -  -  .seek $9E40
+```
+
+However, a `hexdump` of the assembled binary shows that the operation was indeed performed properly--that is, an `$ff` appears in the middle of the `.block` segment.
+
+```
+00000000  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+00000010  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+00000020  <b>ff</b> 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+00000030  01 01 01 01 01 01 01 01  01 01 01 01 01 01 01 01
+```
 
 #### assume
+Does nothing in the most recent version of SPASM. But if it did it would take arguments in this format:
+
+```
+.assume name=value
+```
