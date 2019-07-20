@@ -4,7 +4,7 @@
 ## SPASM-ng Documentation
 ### Pre-Operations (preops)
 #### define (defcont), undefine (undef)
-Create or remove constants to be used during assembly. Defines can be set to equal a value, given as the second operand, or they can just be defined to exist--that is, to be "defined". The `#defcont` preop continues the value expression of the define on a new line--this might be useful for keeping very complicated defines pretty. The `#undefine` preop and its alias `#undef` make it so the constant is no longer defined.
+Create or remove constants to be used during assembly. Defines can be set to equal a value, given as the second operand, or they can just be defined to exist. The `#defcont` preop continues the value expression of the last define on a new line--this might be useful for making more complicated defines pretty. The `#undefine` preop and its alias `#undef` make it so the constant is no longer defined.
 
 ```
 #define progStart $9D00
@@ -34,21 +34,23 @@ You can also include black-and-white bitmaps (.bmp image files) as follows:
 The bitmap must be black-and-white (1-bit grayscale) and the bitmap header can't include the color space information, so there are a lot of restrictions with this. Also, the format prefers 8xN data and will pad the data with 0's to make it wide enough to fit in a byte, even if it's 4xN like this:
 
 <pre>
-60   ; 0<b>11</b>0 0000  <- padding on the right
-F0   ; <b>1111</b> 0000
-F0   ; <b>1111</b> 0000
-60   ; 0<b>11</b>0 0000
-F0   ; <b>1111</b> 0000
-F0   ; <b>1111</b> 0000
-90   ; <b>1</b>00<b>1</b> 0000
-90   ; <b>1</b>00<b>1</b> 0000
+60   ; 0 <b>1 1</b> 0  0 0 0 0  <- padding on the right
+F0   ; <b>1 1 1 1</b>  0 0 0 0
+F0   ; <b>1 1 1 1</b>  0 0 0 0
+60   ; 0 <b>1 1</b> 0  0 0 0 0
+F0   ; <b>1 1 1 1</b>  0 0 0 0
+F0   ; <b>1 1 1 1</b>  0 0 0 0
+90   ; <b>1</b> 0 0 <b>1</b>  0 0 0 0
+90   ; <b>1</b> 0 0 <b>1</b>  0 0 0 0
 </pre>
 
 Here's how I created the above bitmap using GIMP, but you could probably find many other editors that output the bitmap format that SPASM accepts.
 
-<img src="img/create_new_image.png" width="30%" />
-<img src="img/edit_image.png" width="30%" />
-<img src="img/export_image.png" width="30%" />
+<div style="display: block; justify-content: space-between;">
+     <img src="img/create_new_image.png" width="30%" />
+     <img src="img/edit_image.png" width="30%" />
+     <img src="img/export_image.png" width="30%" />
+</div>
 
 Here's how an assembled 8x16 sprite looks in bytecode:
 
@@ -89,7 +91,7 @@ For example, assembling the code below with `spasm -DDEBUG test.z80 test.bin` wi
 
 There are infinite ways to construct complicated examples of if-skeletons, so I won't show them all but you can figure out where is best for you. Here's just one more, an example of an [include guard](https://en.wikipedia.org/wiki/Include_guard):
 
-*tester.inc*
+*tester.inc*:
 ```
 #ifndef TESTER_INC
 #define TESTER_INC
@@ -102,8 +104,8 @@ Even if you put `#include "tester.inc"` several places in your code, it will onl
 #### comment, endcomment
 The assembler ignores the block of code between `#comment` and `#endcomment`, allowing for large and unformatted comments.
 
-```
-#comment   ____          https://www.asciiart.eu/art-and-design/escher
+<pre>
+#comment   ____          <a href="https://www.asciiart.eu/art-and-design/escher">this isn't mine</a>
           /   /\
          /___/  \
         /   /\  /\
@@ -118,10 +120,10 @@ The assembler ignores the block of code between `#comment` and `#endcomment`, al
 \   \             \   \  /
  \___\_____________\___\/
 #endcomment
-```
+</pre>
 
 #### macro, endmacro
-Creates a macro function that performs slightly blind string replaces of its arguments before the code is assembled. These can be simple or arbitrarily complex.
+Creates a macro function that performs blind string replacements of its arguments before the code is assembled. These can be simple or arbitrarily complex.
 
 ```
 #macro ntstr(value)      ; create a null-terminated string
@@ -152,7 +154,7 @@ Message:
 .db 0
 ```
 
-*msg*
+*msg*:
 ```
 super cool message thingy
 ```
@@ -174,7 +176,7 @@ Place bytes, words, or longs (double-words) into code memory at the current loca
 .word 65535, $C0DE	; same thing
 
 .dl $DEADBEEF
-.long $DEADBEEF	; same thing
+.long $DEADBEEF	    ; same thing
 ```
 
 #### nolist, list
@@ -189,18 +191,24 @@ These determine what portions of the code should be included in a listing file, 
 	ret
 ```
 
+The above yields the following listing file, where you can see `ret` has been assembled as `C9`:
+
+```
+6 00:0000 C9 -  -  -      ret
+```
+
 #### org
-This tells the assembler to set the program counter to the two-byte address passed as its argument. The actual address that labels correspond to are all calculated based on the value in PC. It should also be used at the beginning of the program to tell the assembler where in memory the code will be loaded and executed from ($9D93 for Ti calculators). Can also be used to leave space between code blocks in a larger program
+This tells the assembler to set the program counter to the two-byte address passed as its argument. The actual address that labels correspond to are all calculated based on the value in PC. Therefore, `.org` can be used to set the position of certain blocks of code in memory. It should also be used at the beginning of the program to tell the assembler where in memory the code will be loaded and executed from (`9D93` for Ti calculators). Can also be used to leave space between code blocks in a larger program
 
 ```
 .org $9D93		; PC <- $9D93
 ```
 
 #### fill, block
-Fills a region of memory starting at the current value of PC with a constant value, and increments PC to start at the next byte after the fill block. The first argument specifies the number of bytes to fill. The optional second argument specifies the value to fill with. If no second argument is given the region is filled with 0. The `.fill` and `.block` directives are aliases for each other, so they do the exact same thing.
+Fills a region of memory starting at the current value of PC with a constant value, and increments PC to start at the next byte after the fill block. The first argument specifies the number of bytes to fill. The optional second argument specifies the value to fill with. If no second argument is given the region is filled with 0. The `.fill` and `.block` directives are aliases for each other, so they do the exact same thing
 
 ```
-.fill 256, $AB	; fills 256 bytes with $AB
+.fill 256, $AB	     ; fills 256 bytes with $AB
 .fill 10		; fills 10 bytes with 0
 
 .block 256, $AB
@@ -208,7 +216,7 @@ Fills a region of memory starting at the current value of PC with a constant val
 ```
 
 #### end
-Specifies the end of the source code. Can be used to place a text segment at the end for documentation or an appendix. ~~Everything else after the `.end` directive will be ignored.~~ This should be the functionality of `.end` but as of the latest version of SPASM-ng it ignores the directive completely. Good practice to leave it in to 
+Specifies the end of the source code. Can be used to place a text segment at the end for documentation or an appendix. ~~Everything else after the `.end` directive will be ignored.~~ (This should be the functionality of `.end` but as of the latest version of SPASM-ng it ignores the directive completely. Good practice to leave it in for readability) 
 
 ```
 .org $9D93
@@ -229,13 +237,14 @@ Creates a new opcode and takes the following parameters:
 * `mnemonic` is a word like "add" that indicates what the instruction does.
 * `args` is a comma-separated list of the arguments 
 * `instr_data` is the hex code that the opcode assembles to (For `ret` this would be `C9`)
-* `size` is the total size that the opcode takes up in memory (can be any number > `instr_data`+`end_data`)
+* `size` is the number of bytes the instruction takes up in memory (can be greater than length of `instr_data`+`end_data`)
 * `class` and `extended` are not used and can be omitted unless you want to specify `end_data`
 * `end_data` is a single hex byte that will be placed after `instr_data` in the assembled bytecode
 
-SPASM's `.addinstr` code supports `instr_data` up to 8 bytes in size, but due to a conflict with SPASM's pass-one parser, literals of size greater than 4 bytes are not possible so the instr_data field is limited to 4 bytes. However, as shown in the example below, 5 bytes are possible by specifying the single-byte `end_data` to be placed after a max-length `instr_data` segment.
+SPASM's `.addinstr` code supports `instr_data` up to 8 bytes in size, but due to a conflict with SPASM's pass-one parser, literals of size greater than 4 bytes are not possible so the `instr_data` field is limited to 4 bytes. However, as shown in the example below, 5 bytes are possible by specifying the single-byte `end_data` to be placed after a max-length `instr_data` segment.
 
 ```
+.nolist
 .addinstr swap A,B A8A8A8 3
 .addinstr supret "" C9C9C9C9 5 cls ext C9
 
@@ -247,12 +256,8 @@ SPASM's `.addinstr` code supports `instr_data` up to 8 bytes in size, but due to
 The above code produces the following listing:
 
 ```
-1 00:0000 -  -  -  -  .addinstr swap A,B A8A8A8 3
-2 00:0000 -  -  -  -  .addinstr supret "" C9C9C9C9 5 cls ext C9
-3 00:0000 -  -  -  -  
-4 00:0000 -  -  -  -  .list
-5 00:0000 A8 A8 A8 -  	swap A,B
-6 00:0004 C9 C9 C9 C9 
+6 00:0000 A8 A8 A8 -  	swap A,B
+7 00:0004 C9 C9 C9 C9 
           C9 -  -  -  	supret
 ```
 
@@ -272,7 +277,6 @@ They're saved in a file called [*extops.inc*](src/inc/extops.inc) which you can 
 
 ```
 #include "extops.inc"
-.org 0
 	clr A						; not in the standard opcode set
 	ret
 ```
@@ -284,17 +288,20 @@ Print a value or string to a file or stderr during assembly.
 .echo "Writing to stderr"
 .echo > rel/path "Writing to this file"
 .echo >> rel/path "Appending to this file"
+.echo > /home/abs/path "Writing to absolute path file"
+.echo >> /home/abs/path "Appending to absolute path file"
+
 ```
 
 #### error
-Print a value or string to a file or stderr during assembly.
+Print a value or string to stderr during assembly.
 
 ```
 .error "err_string"
 ```
 
 #### equ
-Create an equate for a constant value. Each place in the source code where `ALIAS` is found, the constant value is substituted. Equates can be used in expressions, and likewise, expressions can be used as the constant value for an alias as long as the value is predetermined at assembly.
+Create an equate for a constant value. Each place in the source code where `ALIAS` is found, the constant value is substituted. Equates can be used in expressions, and likewise, expressions can be used as the constant value for an alias as long as the value is predetermined at assembly-time.
 
 ```
 ALIAS 	.equ 64
@@ -311,7 +318,7 @@ Shows the string value of a define, so no text replacement is performed before p
 .show apple
 ```
 
-The above code produces `APPLE: progStart-2` in the command line during assembly.
+The above code prints `APPLE: progStart-2` in the command line during assembly.
 
 #### option
 Create multiple defines in one line. Each `name=expr` pair will create a define with `__name` evaluating to `expr`. Several pairs can be chained together.
@@ -323,7 +330,7 @@ Create multiple defines in one line. Each `name=expr` pair will create a define 
 .show __flamingo
 ```
 
-The above code produces the following during assembly:
+The above code prints the following during assembly:
 
 ```
 __APPLE: 56
@@ -379,8 +386,10 @@ However, a `hexdump` of the assembled binary shows that the operation was indeed
 </pre>
 
 #### assume
-Does nothing in the most recent version of SPASM. But if it did it would take arguments in this format:
+Can be used to set ADL to 0 or 1 (only useful for eZ80 programming). Takes arguments in the following format:
 
 ```
 .assume name=value
 ```
+
+But I believe `.assume ADL={0 or 1}` is the only way this is used at the moment.
