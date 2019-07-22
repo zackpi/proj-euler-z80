@@ -1,6 +1,93 @@
 .nolist
+#include "ti83plus.inc"
+#define progStart $9D95
 
-
+#comment
+> Ti8X Z80 ASM Project Euler Problems
+> by Zachary Pitcher
+> 
+> Problem 1: Multiples of 3 and 5
+> 	If we list all the natural numbers below 10 that are multiples of 3 or 5, 
+> 	we get 3, 5, 6 and 9. The sum of these multiples is 23.
+> 	Find the sum of all the multiples of 3 or 5 below 1000.
+#endcomment
 
 .list
+.org progStart-2
+.db t2ByteTok, tAsmCmp
+start:	jp main			; start execution at main
+
+
+; converts a hex value to binary coded decimal
+; @param: hl	contains pointer to data to be converted
+; @reg:	a,b,c
+hex2bcd:
+	dec hl
+	ld b, 0
+	ld c, (hl)
+	add hl, bc
+	ld b, c
+
+h2dfor:	ld a, (hl)
+	ld c, a
+	and a, $0f
+
 	ret
+; end prtdec
+
+
+; prints a hex nibble
+; @param: a 	contains nibble to be printed
+; @reg:	a
+prtnbl:	
+	cp $0a
+	jr c, pnbnum		; compare with $A to test if letter or number			
+pnbltr:	add a, $07
+pnbnum:	add a, $30		; convert to ascii for both cases
+	bcall(_PutC)		; print the ascii char in a
+	ret
+; end prtnbl
+
+
+; prints data as hex bytes (little-endian)
+; @param: hl	contains pointer to data to be printed
+; @reg:	a,b,c
+prthex:	
+	dec hl
+	ld b, 0
+	ld c, (hl)		; c <- length of data in bytes
+	add hl, bc 		; jump to end of data
+	ld b, c
+phxfor:	ld a, (hl)		; a <- byte of data to be printed
+	and a, $f0
+	rra
+	rra
+	rra
+	rra			; a <- high nibble
+	call prtnbl
+	ld a, (hl)
+	and a, $0f		; a <- low nibble
+	call prtnbl
+	dec hl
+	djnz phxfor
+	ret
+; end prthex
+
+
+; execution starts here
+main:	
+	bcall(_ClrLCDFull)	; clear the home screen
+	ld hl, 0
+	ld (CurRow), hl		; set CurRow to 0
+	
+	ld hl, value
+	call prthex		; print value
+	bcall(_NewLine)	
+	ret
+; end main
+
+
+vallen:
+	.db $04		; number of bytes in value
+value:
+	.db $0f, $1e, $2d, $3c
