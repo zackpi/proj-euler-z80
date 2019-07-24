@@ -398,4 +398,4 @@ Can be used to set ADL to 0 or 1 (only useful for eZ80 programming). Takes argum
 .assume name=value
 ```
 
-But I believe `.assume ADL={0 or 1}` is the only way this is used at the moment.
+But I believe `.assume ADL={0 or 1}` is the only way this is used at the moment. From the SPASM-ng github page: "This tells the assembler to assume that ADL mode is on. ADL mode means the processor is using 24-bit register pairs and memory addresses, which is \[the\] calculator's default"

@@ -33,6 +33,7 @@ h2dfor:	ld a, (hl)
 	and a, $0f
 
 	ret
+bcdbuf:	.fill 0x100
 ; end prtdec
 
 
