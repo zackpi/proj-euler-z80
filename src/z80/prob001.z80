@@ -18,40 +18,61 @@
 start:	jp main			; start execution at main
 
 
+; use toom-cook algorithm and divide along bytes or words
+; @param: 	hl	contains pointer to data to be multiplied
+; @reg:	idk
+bigmul:
+	ret
+
+
 ; converts a hex value to binary coded decimal
-; @param: hl	contains pointer to data to be converted
+; uses dibble dabble algorithm
 ; @reg:	a,b,c
 hex2bcd:
-	dec hl
-	ld b, 0
-	ld c, (hl)
-	add hl, bc
-	ld b, c
+	ld c, (vallen)
+	ld b, $1 		; number of iterations of h2dfor
+	ccf
 
-h2dfor:	ld a, (hl)
-	ld c, a
-	and a, $0f
+h2dfor:	push bc
 
+	ld a, (vallen)
+	ld b, a
+	ld hl, valbuf
+	ld b, c 		; number of iterations of h2dshhx
+h2dshhx:	ld a, (hl)
+	rla		; shift the whole thing left one
+	djnz h2dshhx
+
+	ld a, (bcdlen)
+	ld b, a		; number of iterations of h2dshdc
+	ld de, bcdbuf
+h2dshdc:	ld a, (de)
+	rla
+	djnz h2dshdc	; shift carry into bcd
+
+	pop bc
+	djnz h2dfor
 	ret
-bcdbuf:	.fill 0x100
+bcdlen:	.db $06
+bcdbuf:	.fill $100
 ; end prtdec
 
 
 ; prints a hex nibble
-; @param: a 	contains nibble to be printed
+; @param: 	a 	contains nibble to be printed
 ; @reg:	a
 prtnbl:	
 	cp $0a
-	jr c, pnbnum		; compare with $A to test if letter or number			
+	jr c, pnbnum	; compare with $A to test if letter or number			
 pnbltr:	add a, $07
 pnbnum:	add a, $30		; convert to ascii for both cases
-	bcall(_PutC)		; print the ascii char in a
+	bcall(_PutC)	; print the ascii char in a
 	ret
 ; end prtnbl
 
 
 ; prints data as hex bytes (little-endian)
-; @param: hl	contains pointer to data to be printed
+; @param: 	hl	contains pointer to data to be printed
 ; @reg:	a,b,c
 prthex:	
 	dec hl
@@ -64,7 +85,7 @@ phxfor:	ld a, (hl)		; a <- byte of data to be printed
 	rra
 	rra
 	rra
-	rra			; a <- high nibble
+	rra		; a <- high nibble
 	call prtnbl
 	ld a, (hl)
 	and a, $0f		; a <- low nibble
@@ -79,9 +100,12 @@ phxfor:	ld a, (hl)		; a <- byte of data to be printed
 main:	
 	bcall(_ClrLCDFull)	; clear the home screen
 	ld hl, 0
-	ld (CurRow), hl		; set CurRow to 0
+	ld (CurRow), hl	; set CurRow to 0
 	
-	ld hl, value
+	ld hl, valbuf
+	call hex2bcd
+
+	ld hl, bcdbuf
 	call prthex		; print value
 	bcall(_NewLine)	
 	ret
@@ -90,5 +114,5 @@ main:
 
 vallen:
 	.db $04		; number of bytes in value
-value:
+valbuf:
 	.db $0f, $1e, $2d, $3c
