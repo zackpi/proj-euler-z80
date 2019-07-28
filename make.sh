@@ -4,10 +4,20 @@ echo "Ti-8x z80 ASM Project Euler programs"
 echo "Copyright 2019 Zachary Pitcher"
 echo ""
 
-# parse first argument from command line as the problem to be built
-case $1 in
-    ''|*[!0-9]*) echo "Choose a problem to build by specifying a first argument"; exit ;;
-    *) PROB=$1; PROG=$(printf "prob%03d" $PROB); CALCNAME=$(printf "PROB%03d" $PROB) ;;
+PROB="1"
+DEBUG="false"
+
+while getopts 'p:d' flag; do
+	case "${flag}" in
+		p) PROB="${OPTARG}" ;;
+		d) DEBUG="true" ;;
+	esac
+done
+
+# parse problem argument as a number
+case $PROB in
+    ''|*[!0-9]*) echo "Problem argument must be a number"; exit ;;
+    *) PROG=$(printf "prob%03d" $PROB); CALCNAME=$(printf "PROB%03d" $PROB) ;;
 esac
 
 # parent directories
@@ -54,6 +64,25 @@ ROM_FILE=$ROM_DIR/ti84se.rom
 MACRO_FILE=$MACRO_DIR/runasm.macro
 
 echo "Running $PROG.8xp on emulator..."
-tilem2 -r $ROM_FILE -p $MACRO_FILE $XP8_FILE -d 2> /dev/null
+
+if [ $DEBUG != "true" ]; then
+	tilem2 -r $ROM_FILE -p $MACRO_FILE $XP8_FILE 2> /dev/null
+else
+	tilem2 -r $ROM_FILE -p $MACRO_FILE $XP8_FILE -d & 2> /dev/null
+
+	sleep .5
+	echo "Running debugger and breaking at usermem..."
+	xdotool key Tab Shift+Tab Menu 
+	sleep .05
+	xdotool key Down Down Return 
+	sleep .05
+	xdotool key 9 D 9 5 Return 
+	sleep .05
+	xdotool key Menu Down Return 
+	sleep .05
+	xdotool key Shift+Tab Left Left Left Return
+	wait
+fi
+
 echo "Done."
 
