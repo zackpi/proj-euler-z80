@@ -29,23 +29,17 @@ bigmul:
 ; uses double dabble algorithm
 ; @reg:	a,b,c
 hex2bcd:
-	scf
-	ccf
 	ld a, (vallen)
 	ld c, a 		; number of iterations of h2dshhx
-	rla
+	add a, a 		; double a and clear carry
 	rla
 	rla		; multiply by 8 for number of bytes
 	ld b, a 		; number of iterations of h2dfor
 
-	scf
-	ccf
 	ld a, (bcdlen)
 	ld d, a 		; multiply by 8 for number of bytes
 
 h2dfor:	push bc
-	scf
-	ccf
 
 	ld hl, valbuf
 	ld b, c 		; number of iterations of h2dshhx
@@ -71,6 +65,7 @@ hinibchk:	ld c, a
 	add a, $30		; add 3 to high nibble if > 4
 endchk:	add a, c
 	ld (hl), a 		; write back
+	inc hl
 	djnz h2dadd3
 
 	pop af
@@ -81,10 +76,13 @@ h2dshdc:	rl (hl)
 	inc hl
 	djnz h2dshdc	; shift carry into bcd
 
+	scf
+	ccf
 	pop bc
 	djnz h2dfor
 	ret
-bcdlen:	.db $05
+
+bcdlen:	.db $05		; number of bytes in bcd representation
 bcdbuf:	.fill $100
 ; end prtdec
 
@@ -139,12 +137,14 @@ main:
 	ld hl, bcdbuf
 	call prthex		; print value
 	bcall(_NewLine)	
+
+	ld hl, valbuf
+	call prthex		; print value
+	bcall(_NewLine)	
 	ret
 ; end main
 
 
-vallen:
-	.db $01		; number of bytes in value
-valbuf:
-	.db $f3
+vallen:	.db $04		; number of bytes in value
+valbuf:	.db $f0, $e1, $d2, $c3
 	.fill 100
