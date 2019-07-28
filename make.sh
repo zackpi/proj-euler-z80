@@ -54,6 +54,6 @@ ROM_FILE=$ROM_DIR/ti84se.rom
 MACRO_FILE=$MACRO_DIR/runasm.macro
 
 echo "Running $PROG.8xp on emulator..."
-tilem2 -r $ROM_FILE -p $MACRO_FILE $XP8_FILE 2> /dev/null
+tilem2 -r $ROM_FILE -p $MACRO_FILE $XP8_FILE -d 2> /dev/null
 echo "Done."
 

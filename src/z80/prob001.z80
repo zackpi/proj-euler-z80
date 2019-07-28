@@ -26,34 +26,65 @@ bigmul:
 
 
 ; converts a hex value to binary coded decimal
-; uses dibble dabble algorithm
+; uses double dabble algorithm
 ; @reg:	a,b,c
 hex2bcd:
-	ld c, (vallen)
-	ld b, $1 		; number of iterations of h2dfor
+	scf
 	ccf
+	ld a, (vallen)
+	ld c, a 		; number of iterations of h2dshhx
+	rla
+	rla
+	rla		; multiply by 8 for number of bytes
+	ld b, a 		; number of iterations of h2dfor
+
+	scf
+	ccf
+	ld a, (bcdlen)
+	ld d, a 		; multiply by 8 for number of bytes
 
 h2dfor:	push bc
+	scf
+	ccf
 
-	ld a, (vallen)
-	ld b, a
 	ld hl, valbuf
 	ld b, c 		; number of iterations of h2dshhx
-h2dshhx:	ld a, (hl)
-	rla		; shift the whole thing left one
+h2dshhx:	rl (hl)		; shift the whole thing left one
+	inc hl
 	djnz h2dshhx
 
-	ld a, (bcdlen)
-	ld b, a		; number of iterations of h2dshdc
-	ld de, bcdbuf
-h2dshdc:	ld a, (de)
-	rla
+	push af
+
+	ld hl, bcdbuf
+	ld b, d		
+h2dadd3:	
+lonibchk:	ld a, (hl)	
+	and $0f
+	cp $05
+	jr c, hinibchk
+	add a, $03		; add 3 to low nibble if > 4
+hinibchk:	ld c, a
+	ld a, (hl)
+	and $f0
+	cp $50
+	jr c, endchk
+	add a, $30		; add 3 to high nibble if > 4
+endchk:	add a, c
+	ld (hl), a 		; write back
+	djnz h2dadd3
+
+	pop af
+
+	ld hl, bcdbuf
+	ld b, d		; number of iterations of h2dshdc
+h2dshdc:	rl (hl)
+	inc hl
 	djnz h2dshdc	; shift carry into bcd
 
 	pop bc
 	djnz h2dfor
 	ret
-bcdlen:	.db $06
+bcdlen:	.db $05
 bcdbuf:	.fill $100
 ; end prtdec
 
@@ -113,6 +144,7 @@ main:
 
 
 vallen:
-	.db $04		; number of bytes in value
+	.db $01		; number of bytes in value
 valbuf:
-	.db $0f, $1e, $2d, $3c
+	.db $f3
+	.fill 100
