@@ -7,7 +7,7 @@
 > by Zachary Pitcher
 > 
 > Problem 1: Multiples of 3 and 5
-> 	If we list all the natural numbers below 10 that are multiples of 3 or 5, 
+> 	If we list all the natural numbers below 10 that are multiples of 3 or 5,
 > 	we get 3, 5, 6 and 9. The sum of these multiples is 23.
 > 	Find the sum of all the multiples of 3 or 5 below 1000.
 #endcomment
@@ -19,25 +19,89 @@ start:	jp main			; start execution at main
 
 
 ; use toom-cook algorithm and divide along bytes or words
+; https://en.wikipedia.org/wiki/Toom%E2%80%93Cook_multiplication
 ; @param: 	hl	contains pointer to data to be multiplied
 ; @reg:	idk
 bigmul:
 	ret
 
+; add de to big number at (hl)
+bigadd:
+	dec hl
+	push hl 		; length of bignum
+	ld a, (hl)
+	ld b, a
+
+	inc hl
+	ld a, e
+	add a, (hl)
+	ld (hl), a
+
+	inc hl
+	ld a, d
+	adc a, (hl)
+	ld (hl), a
+
+	jr nc, bgadnc
+
+	dec b
+	djnz bgadloop 	; only do loop if > 2 bytes
+	jr bgadc
+
+
+bgadloop:	inc hl
+	ld a, $0
+	adc a, (hl)
+	ld (hl), a
+	djnz bgadloop
+	
+	jr nc, bgadnc 	; if overflow, update bignum length
+
+bgadc:	inc hl
+	inc (hl) 		; overflow $01 into next byte
+
+	pop hl
+	inc (hl) 		; overflow causes inc in bignum length
+	inc hl 		; return hl unmodified
+	ret
+
+bgadnc:	pop hl 		; clean up stack
+	inc hl 		; return hl unmodified
+ 	ret
+
+
+
 
 ; converts a hex value to binary coded decimal
 ; uses double dabble algorithm
+; len_h = floor(log16(n)) + 1
+; len_d = floor(log10(n)) + 1
+; 
+; len_d_max = floor(len_h*log10(16)) + 1
+; len_d < len_h*5/4 + 1
+;
+; @param:	hl
 ; @reg:	a,b,c
 hex2bcd:
-	ld a, (vallen)
+	dec hl
+	ld a, (hl)		; load length of data in bytes
 	ld c, a 		; number of iterations of h2dshhx
-	add a, a 		; double a and clear carry
-	rla
-	rla		; multiply by 8 for number of bytes
+	
+	add a, a
+	add a, a
+	add a, a		; multiply by 8 for number of bits
 	ld b, a 		; number of iterations of h2dfor
 
-	ld a, (bcdlen)
-	ld d, a 		; multiply by 8 for number of bytes
+	ld a, c 		; len_h
+	add a, a 		
+	add a, a
+	add a, c 		; multiply by 5
+	and $fc
+	rrca
+	rrca 		; divide by 4
+	add a, $01
+	ld (bcdlen), a
+	inc hl
 
 h2dfor:	push bc
 
@@ -82,7 +146,7 @@ h2dshdc:	rl (hl)
 	djnz h2dfor
 	ret
 
-bcdlen:	.db $05		; number of bytes in bcd representation
+bcdlen:	.db $00		; number of bytes in bcd representation
 bcdbuf:	.fill $100
 ; end prtdec
 
@@ -111,10 +175,10 @@ prthex:
 	ld b, c
 phxfor:	ld a, (hl)		; a <- byte of data to be printed
 	and a, $f0
-	rra
-	rra
-	rra
-	rra		; a <- high nibble
+	rrca
+	rrca
+	rrca
+	rrca		; a <- high nibble
 	call prtnbl
 	ld a, (hl)
 	and a, $0f		; a <- low nibble
@@ -125,6 +189,51 @@ phxfor:	ld a, (hl)		; a <- byte of data to be printed
 ; end prthex
 
 
+; solve project euler problem 001 and store the result in (hl)
+prob001:
+	ld b, $42
+	ld de, $00
+
+p001loop:	push bc
+
+	inc de
+	inc de
+	inc de
+	call bigadd 	; + 3
+
+	inc de
+	inc de
+	call bigadd 	; + 5
+
+	inc de
+	call bigadd 	; + 6
+
+	inc de 
+	inc de 
+	inc de
+	call bigadd 	; + 9
+
+	inc de
+	call bigadd 	; + 10
+
+	inc de
+	inc de
+	call bigadd 	; + 12
+
+	inc de
+	inc de
+	inc de
+	call bigadd 	; + 15
+
+	pop bc
+	djnz p001loop 	; 15*66 = 990 so this loop does < 990
+
+	ld de, $f8f 	; from problem statement 990 -> 999 = 990*4 + 23
+	call bigadd
+
+	ret
+
+
 ; execution starts here
 main:	
 	bcall(_ClrLCDFull)	; clear the home screen
@@ -132,19 +241,17 @@ main:
 	ld (CurRow), hl	; set CurRow to 0
 	
 	ld hl, valbuf
+	call prob001
+
+	ld hl, valbuf
 	call hex2bcd
 
 	ld hl, bcdbuf
-	call prthex		; print value
-	bcall(_NewLine)	
-
-	ld hl, valbuf
 	call prthex		; print value
 	bcall(_NewLine)	
 	ret
 ; end main
 
 
-vallen:	.db $04		; number of bytes in value
-valbuf:	.db $f0, $e1, $d2, $c3
-	.fill 100
+vallen:	.db $02		; number of bytes in value
+valbuf:	.fill 100
